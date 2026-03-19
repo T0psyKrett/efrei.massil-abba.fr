@@ -7,9 +7,6 @@ export const metadata: Metadata = {
   description: "Cybersecurity portfolio showcasing penetration testing reports, network architecture projects, and security research by Massil Abba at EFREI Paris.",
   keywords: ["Cybersecurity", "Penetration Testing", "Network Security", "EFREI Paris", "Massil Abba", "Security Reports"],
   authors: [{ name: "Massil Abba" }],
-  icons: {
-    icon: "/Logo ABBA.jpg",
-  },
   openGraph: {
     title: "EFREI Paris — Massil Abba | Cybersecurity Workspace",
     description: "Cybersecurity portfolio showcasing projects and reports.",
