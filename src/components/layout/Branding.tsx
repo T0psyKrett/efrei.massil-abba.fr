@@ -22,9 +22,9 @@ export default function Branding({
             {/* Minimalist logo group */}
             <div className="flex items-center gap-3">
                 {/* EFREI logo */}
-                <div className="flex items-center">
+                <div className="flex items-center" style={{ borderRadius: 8, overflow: "hidden", background: "white" }}>
                     <img
-                        src="/Logo_EFREI_New.png"
+                        src="/Logo_EFREI.png"
                         alt="EFREI Paris"
                         style={{
                             height: logoSize,
