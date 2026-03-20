@@ -398,11 +398,13 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
                                             sectionId={block.id}
                                             placeholder="Write content here..."
                                             content={block.content}
+                                            projectId={projectId}
                                             onChange={(blockId, html) => handleBlockChange(idx, bIdx, html)}
                                         />
                                     ) : block.type === 'image' ? (
                                         <ImageBlockEditor 
                                             content={block.content}
+                                            projectId={projectId}
                                             onChange={(url, filename) => handleBlockChange(idx, bIdx, url, filename)}
                                         />
                                     ) : (

@@ -10,11 +10,13 @@ import {
     Bold, Italic, UnderlineIcon, List, ListOrdered, Code
 } from "lucide-react";
 import { useRef } from "react";
+import { uploadFile, generateStoragePath } from "@/services/storageService";
 
 interface ReportSectionEditorProps {
     sectionId: string;
     placeholder: string;
     content: string;
+    projectId: string;
     onChange: (sectionId: string, html: string) => void;
 }
 
@@ -40,7 +42,7 @@ function ToolbarButton({
 }
 
 export default function ReportSection({
-    sectionId, placeholder, content, onChange,
+    sectionId, placeholder, content, projectId, onChange,
 }: ReportSectionEditorProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const editor = useEditor({
@@ -78,18 +80,10 @@ export default function ReportSection({
         if (!file || !editor) return;
 
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            const path = generateStoragePath(projectId, file.name, "images");
+            const url = await uploadFile(file, path);
             
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
-            
-            if (!res.ok) throw new Error("Upload failed");
-            
-            const data = await res.json();
-            editor.chain().focus().setImage({ src: data.url }).run();
+            editor.chain().focus().setImage({ src: url }).run();
         } catch (error) {
             console.error("Image upload failed", error);
             alert("Failed to upload image.");

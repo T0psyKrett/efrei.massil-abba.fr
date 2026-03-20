@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { ImageIcon, UploadCloud, Loader2 } from "lucide-react";
+import { uploadFile, generateStoragePath } from "@/services/storageService";
 
-export default function ImageBlockEditor({ content, onChange }: { content: string, onChange: (url: string, filename?: string) => void }) {
+export default function ImageBlockEditor({ content, projectId, onChange }: { content: string, projectId: string, onChange: (url: string, filename?: string) => void }) {
     const [uploading, setUploading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -11,18 +12,10 @@ export default function ImageBlockEditor({ content, onChange }: { content: strin
 
         setUploading(true);
         try {
-            const formData = new FormData();
-            formData.append("file", file);
+            const path = generateStoragePath(projectId, file.name, "images");
+            const url = await uploadFile(file, path);
             
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: formData,
-            });
-            
-            if (!res.ok) throw new Error("Upload failed");
-            
-            const data = await res.json();
-            onChange(data.url, data.filename);
+            onChange(url, file.name);
         } catch (error) {
             console.error("Image upload failed", error);
             alert("Failed to upload image.");
