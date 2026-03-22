@@ -191,20 +191,27 @@ export async function getReport(id: string): Promise<Report | null> {
 }
 
 export async function createReport(data: Omit<Report, "id" | "createdAt" | "updatedAt">): Promise<string> {
-    const sanitized = {
+    const sanitized: any = {
         ...data,
         title: sanitizeString(data.title, 200),
-        subtitle: data.subtitle ? sanitizeString(data.subtitle, 500) : undefined,
-        sections: data.sections.map(s => ({
-            ...s,
-            title: sanitizeString(s.title, 200),
-            content: sanitizeHTML(s.content),
-            blocks: s.blocks?.map(b => ({
-                ...b,
-                content: b.type === "text" ? sanitizeHTML(b.content) : b.content
-            }))
-        }))
+        sections: data.sections.map(s => {
+            const sanitizedSection: any = {
+                ...s,
+                title: sanitizeString(s.title, 200),
+                content: sanitizeHTML(s.content),
+            };
+            if (s.blocks) {
+                sanitizedSection.blocks = s.blocks.map(b => {
+                    const blk: any = { ...b, content: b.type === "text" ? sanitizeHTML(b.content) : b.content };
+                    if (blk.filename === undefined) delete blk.filename;
+                    return blk;
+                });
+            }
+            return sanitizedSection;
+        })
     };
+    if (data.subtitle) sanitized.subtitle = sanitizeString(data.subtitle, 500);
+    else delete sanitized.subtitle;
     const ref = await addDoc(collection(db, "reports"), { ...sanitized, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return ref.id;
 }

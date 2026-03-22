@@ -171,7 +171,11 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
         setSections(prev => {
             const ns = [...prev];
             const blocks = [...(ns[sectionIdx].blocks || [])];
-            blocks[blockIdx] = { ...blocks[blockIdx], content, filename: filename || blocks[blockIdx].filename };
+            const newBlock = { ...blocks[blockIdx], content };
+            const newFilename = filename || blocks[blockIdx].filename;
+            if (newFilename) newBlock.filename = newFilename;
+            else delete newBlock.filename;
+            blocks[blockIdx] = newBlock;
             // Legacy content sync for seamless reading in old code if needed
             ns[sectionIdx] = { ...ns[sectionIdx], blocks, content: blocks.map(b => b.type === 'image' ? `<img src="${b.content}" />` : b.content).join("") };
             return ns;
