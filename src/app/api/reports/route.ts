@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb } from "@/services/firebaseAdmin";
+import { getAdminDb, getAdminAuth } from "@/services/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 import { cookies } from "next/headers";
 
 export async function POST(request: NextRequest) {
-    // Verify admin session
+    // Verify session cookie (same name as set by /api/auth/session)
     const cookieStore = await cookies();
-    const session = cookieStore.get("admin_session");
-    if (!session?.value) {
-        return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    const sessionCookie = cookieStore.get("session")?.value;
+
+    if (!sessionCookie) {
+        return NextResponse.json({ error: "Non autorisé — cookie manquant" }, { status: 401 });
+    }
+
+    try {
+        // Validate the session cookie with Firebase Admin
+        await getAdminAuth().verifySessionCookie(sessionCookie, true);
+    } catch {
+        return NextResponse.json({ error: "Non autorisé — session invalide" }, { status: 401 });
     }
 
     try {
