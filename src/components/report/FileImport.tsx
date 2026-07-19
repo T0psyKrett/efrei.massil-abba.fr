@@ -5,7 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, ChevronRight, Settings } from "lucide-react";
 import { uploadFile, generateStoragePath, detectFileType } from "@/services/storageService";
-import { createReport, getSettings, SiteSettings } from "@/services/firestoreService";
+import { getSettings, SiteSettings } from "@/services/firestoreService";
 import { useRouter } from "next/navigation";
 import PDFPreviewModal from "@/components/ui/PDFPreviewModal";
 
@@ -106,16 +106,25 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
                 }
             ] : [];
 
-            const reportId = await createReport({
-                projectId,
-                title: file.name.replace(/\.(pdf|docx|md)$/i, ""),
-                course: selectedCourse,
-                sections: initialSections,
-                type: reportType,
-                importedFileUrl: isTextDoc ? undefined : url,
-                importedFileType: isTextDoc ? undefined : (fileType ?? undefined),
-                published: true // Publish immediately for visitors
+            const res = await fetch("/api/reports", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    projectId,
+                    title: file.name.replace(/\.(pdf|docx|md)$/i, ""),
+                    course: selectedCourse,
+                    sections: initialSections,
+                    type: reportType,
+                    importedFileUrl: isTextDoc ? undefined : url,
+                    importedFileType: isTextDoc ? undefined : (fileType ?? undefined),
+                    published: true,
+                }),
             });
+            if (!res.ok) {
+                const errData = await res.json().catch(() => ({}));
+                throw new Error(errData.error || `Erreur serveur HTTP ${res.status}`);
+            }
+            const { id: reportId } = await res.json();
 
             setFiles((prev) =>
                 prev.map((f) =>
