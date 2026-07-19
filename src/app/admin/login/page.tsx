@@ -7,8 +7,9 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Shield, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import NetworkBackground from "@/components/background/NetworkBackground";
-import Branding from "@/components/layout/Branding";
+import loadDynamic from "next/dynamic";
+
+const NetworkBg = loadDynamic(() => import("@/components/background/NetworkBackground"), { ssr: false });
 
 export default function AdminLoginPage() {
     const { signInWithGoogle } = useAuth();
@@ -25,7 +26,7 @@ export default function AdminLoginPage() {
         setError("");
         try {
             await signInWithGoogle();
-            router.replace("/dashboard");
+            router.replace("/reports");
         } catch (err) {
             const error = err as Error;
             console.error(error);
@@ -56,16 +57,16 @@ export default function AdminLoginPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 overflow-hidden"
             style={{ background: "#000000" }}
         >
-            {/* Network background — more visible */}
+            {/* Network background */}
             <div className="absolute inset-0 opacity-30 scale-110">
-                <NetworkBackground />
+                <NetworkBg />
             </div>
 
             {/* Blue radial glow */}
             <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
-                    background: "radial-gradient(circle at 50% 50%, rgba(59,130,246,0.10) 0%, transparent 65%)",
+                    background: "radial-gradient(circle at 50% 50%, rgba(27,108,168,0.12) 0%, transparent 65%)",
                     zIndex: 1,
                 }}
             />
@@ -98,22 +99,29 @@ export default function AdminLoginPage() {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                     >
-                        <div className="relative flex items-center justify-center transition-all duration-300">
-                            <img
+                        <div
+                            className="relative flex items-center justify-center transition-all duration-300"
+                        >
+                            <Image
                                 src="/Logo_EFREI_New.png"
                                 alt="EFREI Paris"
-                                style={{ width: 160, height: "auto", objectFit: "contain", borderRadius: 12, overflow: "hidden" }}
+                                width={160}
+                                height={53}
+                                style={{ width: 160, height: "auto", objectFit: "contain", borderRadius: 12 }}
                             />
                         </div>
 
                         <div style={{ width: 1, height: 60, background: "rgba(255,255,255,0.2)" }} />
 
-                        <div className="relative flex items-center justify-center rounded-full overflow-hidden transition-all duration-300"
+                        <div
+                            className="relative flex items-center justify-center rounded-full overflow-hidden transition-all duration-300"
                             style={{ width: 80, height: 80 }}
                         >
-                            <img
+                            <Image
                                 src="/Logo ABBA.jpg"
                                 alt="Massil Abba"
+                                width={80}
+                                height={80}
                                 style={{ width: 80, height: 80, objectFit: "cover" }}
                             />
                         </div>
@@ -123,10 +131,10 @@ export default function AdminLoginPage() {
                     <motion.div
                         className="w-14 h-14 mx-auto mb-6 rounded-xl flex items-center justify-center"
                         style={{
-                            background: "rgba(59,130,246,0.10)",
-                            border: "1px solid rgba(59,130,246,0.25)",
-                            color: "#3B82F6",
-                            boxShadow: "0 0 24px rgba(59,130,246,0.20)",
+                            background: "rgba(27,108,168,0.12)",
+                            border: "1px solid rgba(27,108,168,0.28)",
+                            color: "#3b9fd4",
+                            boxShadow: "0 0 24px rgba(27,108,168,0.25)",
                         }}
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
@@ -224,13 +232,13 @@ export default function AdminLoginPage() {
                             Secure Gateway v4
                         </p>
                         <button
-                            onClick={() => router.push('/dashboard')}
-                            className="text-[12px] font-medium transition-all"
+                            onClick={() => router.push('/reports')}
+                            className="text-[12px] font-medium transition-all cursor-pointer"
                             style={{ color: "#71717A" }}
                             onMouseEnter={(e) => e.currentTarget.style.color = "#FAFAFA"}
                             onMouseLeave={(e) => e.currentTarget.style.color = "#71717A"}
                         >
-                            ← Return to Dashboard
+                            ← Return to Portfolio
                         </button>
                     </motion.div>
                 </motion.div>

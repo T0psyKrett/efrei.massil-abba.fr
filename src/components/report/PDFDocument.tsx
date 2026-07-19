@@ -24,19 +24,27 @@ Font.register({
 // PDF Styles
 const styles = StyleSheet.create({
     page: { padding: 40, backgroundColor: "#FFFFFF", fontFamily: "Inter" },
-    coverPage: { height: "100%", backgroundColor: "#0d1528", padding: 40 },
-    coverBadgeContainer: { flexDirection: "row", gap: 10, marginBottom: 40 },
-    coverBadgeOrange: { backgroundColor: "#F97316", paddingVertical: 4, paddingHorizontal: 10, borderRadius: 4, color: "#FFFFFF", fontSize: 10, fontWeight: "bold" },
-    coverBadgeOutline: { border: "1px solid rgba(255,255,255,0.3)", paddingVertical: 4, paddingHorizontal: 10, borderRadius: 4, color: "#FFFFFF", fontSize: 10, fontWeight: "bold" },
-    coverCategory: { color: "#F97316", fontSize: 10, fontWeight: "bold", letterSpacing: 2, marginBottom: 10, textTransform: "uppercase" },
-    coverTitle: { color: "#FFFFFF", fontSize: 36, fontWeight: "bold", marginBottom: 16 },
-    coverSubtitle: { color: "#94A3B8", fontSize: 14, marginBottom: 40 },
-    coverMetaGrid: { flexDirection: "row", borderTop: "1px solid #374151", borderBottom: "1px solid #374151", paddingVertical: 20, marginBottom: 40 },
-    coverMetaCol: { flex: 1, borderRight: "1px solid #374151", paddingHorizontal: 10 },
-    coverMetaLabel: { color: "#64748B", fontSize: 8, textTransform: "uppercase", marginBottom: 4 },
-    coverMetaValue: { color: "#FFFFFF", fontSize: 12, fontWeight: "bold" },
-    coverFooter: { position: "absolute", bottom: 40, left: 40, right: 40, flexDirection: "row", alignItems: "center", gap: 20 },
-    coverIPs: { color: "#94A3B8", fontSize: 10 },
+    coverPage: { backgroundColor: "#FFFFFF", padding: 40, position: "relative", flexDirection: "column", alignItems: "center", justifyContent: "space-between", height: "100%" },
+    coverTopBar: { position: "absolute", top: 0, left: 0, right: 0, height: 6 },
+    coverLogoContainer: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginTop: 25, marginBottom: 15 },
+    coverLogoEfreiWrapper: { backgroundColor: "#FFFFFF", paddingVertical: 4, paddingHorizontal: 10, borderRadius: 8, border: "1px solid #E2E8F0", justifyContent: "center", alignItems: "center" },
+    coverLogoEfrei: { width: 85, height: 24, objectFit: "contain" },
+    coverLogoDivider: { width: 1, height: 26, backgroundColor: "#E2E8F0" },
+    coverLogoAbbaWrapper: { borderRadius: 14, overflow: "hidden", borderWidth: 1.5, borderColor: "#E2E8F0", width: 28, height: 28 },
+    coverLogoAbba: { width: 28, height: 28, objectFit: "cover" },
+    coverTitleContainer: { alignItems: "center", width: "100%", marginBottom: 15 },
+    coverTitle: { color: "#1B6CA8", fontSize: 24, fontWeight: "bold", textAlign: "center", paddingHorizontal: 20, marginBottom: 12 },
+    coverTitleUnderline: { width: "70%", height: 1, backgroundColor: "#E2E8F0" },
+    coverDetailsContainer: { alignItems: "center", gap: 4, marginBottom: 25 },
+    coverDetailText: { fontSize: 10, color: "#475569" },
+    coverDetailLabel: { fontWeight: "bold", color: "#0F172A" },
+    coverDetailValue: { color: "#334155" },
+    coverSketchContainer: { alignItems: "center", width: "100%", marginBottom: 15 },
+    coverSketch: { width: 320, height: 140, objectFit: "contain" },
+    coverPaletteContainer: { flexDirection: "row", justifyContent: "center", gap: 6, marginTop: 10 },
+    coverPaletteBlock: { width: 30, height: 8, borderRadius: 2 },
+    coverFooter: { width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #E2E8F0", paddingTop: 10, marginTop: 20 },
+    coverFooterText: { fontSize: 8, color: "#94A3B8", fontFamily: "JetBrains Mono" },
     
     // Content Layout
     sectionHeader: { backgroundColor: "#0d1528", borderRadius: 6, padding: 6, paddingLeft: 12, marginBottom: 8, marginTop: 12, flexDirection: "row", alignItems: "center" },
@@ -237,37 +245,109 @@ const parseHtmlToPdf = (htmlString: string) => {
         return <Text style={styles.p}>{htmlString.replace(/<[^>]*>?/gm, '')}</Text>;
     }
 };
+const DOMAIN_ACCENT: Record<string, string> = {
+    network:    "#4A9B8E",
+    networking: "#4A9B8E",
+    reseau:     "#4A9B8E",
+    pentest:    "#E8621A",
+    pentesting: "#E8621A",
+    web:        "#E8621A",
+    hardening:  "#6B7A8D",
+    sysadmin:   "#6B7A8D",
+    linux:      "#6B7A8D",
+    crypto:     "#B8860B",
+    cryptography: "#B8860B",
+    forensics:  "#B8860B",
+};
+
+const COVER_PALETTE = ["#C5A880", "#7ED3C1", "#F3A390", "#E8621A", "#795238", "#5A6B7C"];
+
+function getDomainAccent(domain?: string, defaultColor = "#1B6CA8"): string {
+    if (!domain) return defaultColor;
+    const key = domain.toLowerCase().replace(/[^a-z]/g, "");
+    for (const [kw, color] of Object.entries(DOMAIN_ACCENT)) {
+        if (key.includes(kw)) return color;
+    }
+    return defaultColor;
+}
+
 export const ReportDocument = ({ report, settings }: { report: Report, settings?: SiteSettings }) => {
     const reportDate = report.createdAt ? (typeof report.createdAt === 'object' && 'toDate' in report.createdAt ? (report.createdAt as any).toDate() : new Date(report.createdAt as any)).toLocaleDateString() : "N/A";
-    const accentColor = settings?.theme?.primaryAccent || "#F97316";
+    const dynamicAccent = getDomainAccent(report.domain, settings?.theme?.primaryAccent);
     const headerBg = settings?.theme?.sectionHeaderBg || "#0d1528";
-    const coverBgEnd = settings?.theme?.coverGradientEnd || "#0d1528";
+
+    const logoUrl = typeof window !== 'undefined' ? window.location.origin + "/Logo_EFREI_New.png" : "/Logo_EFREI_New.png";
+    const abbaLogoUrl = typeof window !== 'undefined' ? window.location.origin + "/Logo%20ABBA.jpg" : "/Logo ABBA.jpg";
+    const sketchUrl = typeof window !== 'undefined' ? window.location.origin + "/efrei_campus_sketch.jpg" : "/efrei_campus_sketch.jpg";
 
     return (
         <Document>
-            <Page size="A4" style={[styles.coverPage, { backgroundColor: coverBgEnd }]}>
-                <View>
-                    <View style={styles.coverBadgeContainer}>
-                        {report.isConfidential !== false && <Text style={[styles.coverBadgeOrange, { backgroundColor: accentColor }]}>CONFIDENTIEL</Text>}
-                        {report.isInternal !== false && <Text style={styles.coverBadgeOutline}>Usage Interne</Text>}
-                    </View>
-                    <Text style={[styles.coverCategory, { color: accentColor }]}>{report.categoryLabel || "RAPPORT TECHNIQUE D'INSTALLATION"}</Text>
-                    <Text style={styles.coverTitle}>{report.title}</Text>
-                    <Text style={styles.coverSubtitle}>{report.subtitle || report.course || ""}</Text>
-                    <View style={styles.coverMetaGrid}>
-                        <View style={styles.coverMetaCol}><Text style={styles.coverMetaLabel}>VERSION</Text><Text style={styles.coverMetaValue}>{report.version || "1.0.0"}</Text></View>
-                        <View style={styles.coverMetaCol}><Text style={styles.coverMetaLabel}>DATE</Text><Text style={styles.coverMetaValue}>{report.dateOverride || reportDate}</Text></View>
-                        <View style={[styles.coverMetaCol, { borderRight: 0 }]}><Text style={styles.coverMetaLabel}>DOMAINE</Text><Text style={styles.coverMetaValue}>{report.domain || ""}</Text></View>
+            <Page size="A4" style={styles.coverPage}>
+                {/* Blue Top Accent Line */}
+                <View style={[styles.coverTopBar, { backgroundColor: dynamicAccent }]} />
+                
+                {/* Top Section */}
+                <View style={{ alignItems: "center", width: "100%" }}>
+                    <View style={styles.coverLogoContainer}>
+                        <View style={styles.coverLogoEfreiWrapper}>
+                            <Image src={logoUrl} style={styles.coverLogoEfrei} />
+                        </View>
+                        <View style={styles.coverLogoDivider} />
+                        <View style={styles.coverLogoAbbaWrapper}>
+                            <Image src={abbaLogoUrl} style={styles.coverLogoAbba} />
+                        </View>
                     </View>
                 </View>
-                <View style={styles.coverFooter}>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 20 }}>
-                        {report.ips?.map((ip, idx) => (
-                            <View key={ip.ip + idx} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                <Text style={{ color: accentColor, fontSize: 10 }}>●</Text>
-                                <Text style={styles.coverIPs}>{ip.label} {ip.ip}</Text>
-                            </View>
+
+                {/* Middle Section */}
+                <View style={{ alignItems: "center", width: "100%" }}>
+                    {/* Title and Separator Line */}
+                    <View style={styles.coverTitleContainer}>
+                        <Text style={[styles.coverTitle, { color: dynamicAccent }]}>{report.title}</Text>
+                        <View style={styles.coverTitleUnderline} />
+                    </View>
+
+                    {/* Metadata details block */}
+                    <View style={styles.coverDetailsContainer}>
+                        <Text style={styles.coverDetailText}>
+                            <Text style={styles.coverDetailLabel}>Formation : </Text>
+                            <Text style={styles.coverDetailValue}>{report.subtitle || report.course || "Master 1 — Cybersécurité, Réseaux & Cloud"}</Text>
+                        </Text>
+                        <Text style={styles.coverDetailText}>
+                            <Text style={styles.coverDetailLabel}>Groupe / Élève : </Text>
+                            <Text style={styles.coverDetailValue}>{report.groupMembers && report.groupMembers.length > 0 ? report.groupMembers.join(", ") : "Massil ABBA"}</Text>
+                        </Text>
+                        <Text style={styles.coverDetailText}>
+                            <Text style={styles.coverDetailLabel}>Date de rendu : </Text>
+                            <Text style={styles.coverDetailValue}>{report.dateOverride || reportDate}</Text>
+                        </Text>
+                        {report.tutor && (
+                            <Text style={styles.coverDetailText}>
+                                <Text style={styles.coverDetailLabel}>Tuteur référent : </Text>
+                                <Text style={styles.coverDetailValue}>{report.tutor}</Text>
+                            </Text>
+                        )}
+                    </View>
+                </View>
+
+                {/* Bottom Section */}
+                <View style={{ alignItems: "center", width: "100%" }}>
+                    {/* Efrei Courtyard Campus Sketch */}
+                    <View style={styles.coverSketchContainer}>
+                        <Image src={sketchUrl} style={styles.coverSketch} />
+                    </View>
+
+                    {/* Colored Palette Blocks */}
+                    <View style={styles.coverPaletteContainer}>
+                        {COVER_PALETTE.map((color, idx) => (
+                            <View key={idx} style={[styles.coverPaletteBlock, { backgroundColor: color }]} />
                         ))}
+                    </View>
+
+                    {/* Footer (Rendering date left, class name right) */}
+                    <View style={styles.coverFooter}>
+                        <Text style={styles.coverFooterText}>Date de rendu : {report.dateOverride || reportDate}</Text>
+                        <Text style={styles.coverFooterText}>{report.course || "M1 CSC1"}</Text>
                     </View>
                 </View>
             </Page>
@@ -279,7 +359,7 @@ export const ReportDocument = ({ report, settings }: { report: Report, settings?
                                 <Text style={styles.sectionPhase}>PHASE {idx + 1}</Text>
                                 <View style={styles.sectionNumberRow}>
                                     <Text style={styles.sectionNumber}>0{idx + 1}</Text>
-                                    <View style={{ marginLeft: 8, marginTop: 2 }}><PdfIcon name={section.icon || "Terminal"} color={accentColor} /></View>
+                                    <View style={{ marginLeft: 8, marginTop: 2 }}><PdfIcon name={section.icon || "Terminal"} color={dynamicAccent} /></View>
                                 </View>
                             </View>
                             <View style={styles.sectionDivider} />

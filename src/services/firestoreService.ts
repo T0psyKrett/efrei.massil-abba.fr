@@ -109,6 +109,10 @@ export interface Report {
     domain?: string;
     ips?: { label: string; ip: string; color: string }[];
     published?: boolean;
+
+    // Team metadata
+    groupMembers?: string[];
+    tutor?: string;
 }
 
 // ─── Default Report Sections ──────────────────────────────
@@ -212,6 +216,10 @@ export async function createReport(data: Omit<Report, "id" | "createdAt" | "upda
     };
     if (data.subtitle) sanitized.subtitle = sanitizeString(data.subtitle, 500);
     else delete sanitized.subtitle;
+    if (data.tutor) sanitized.tutor = sanitizeString(data.tutor, 100);
+    else delete sanitized.tutor;
+    if (data.groupMembers) sanitized.groupMembers = sanitizeTags(data.groupMembers);
+    else delete sanitized.groupMembers;
     const ref = await addDoc(collection(db, "reports"), { ...sanitized, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
     return ref.id;
 }
@@ -220,6 +228,8 @@ export async function updateReport(id: string, data: Partial<Report>): Promise<v
     const sanitized: Partial<Report> = { ...data };
     if (data.title) sanitized.title = sanitizeString(data.title, 200);
     if (data.subtitle) sanitized.subtitle = sanitizeString(data.subtitle, 500);
+    if (data.tutor) sanitized.tutor = sanitizeString(data.tutor, 100);
+    if (data.groupMembers) sanitized.groupMembers = sanitizeTags(data.groupMembers);
     if (data.sections) {
         sanitized.sections = data.sections.map(s => ({
             ...s,

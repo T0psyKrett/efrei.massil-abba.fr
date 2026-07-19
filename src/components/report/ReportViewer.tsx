@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import { Report, getSettings, SiteSettings, DEFAULT_SETTINGS } from "@/services/firestoreService";
 import { Network, Terminal, Settings as SettingsIcon, Shield, CheckCircle, ArrowRight, Database, Lock, Server, Globe } from "lucide-react";
 import PDFExportButton from "./PDFExportButton";
@@ -15,6 +16,30 @@ const ICON_MAP: Record<string, React.ElementType> = {
     Network, Terminal, Settings: SettingsIcon, Shield, CheckCircle, 
     ArrowRight, Database, Lock, Server, Globe
 };
+
+const DOMAIN_ACCENT: Record<string, string> = {
+    network:    "#4A9B8E",
+    networking: "#4A9B8E",
+    reseau:     "#4A9B8E",
+    pentest:    "#E8621A",
+    pentesting: "#E8621A",
+    web:        "#E8621A",
+    hardening:  "#6B7A8D",
+    sysadmin:   "#6B7A8D",
+    linux:      "#6B7A8D",
+    crypto:     "#B8860B",
+    cryptography: "#B8860B",
+    forensics:  "#B8860B",
+};
+
+function getDomainAccent(domain?: string, defaultColor = "#1B6CA8"): string {
+    if (!domain) return defaultColor;
+    const key = domain.toLowerCase().replace(/[^a-z]/g, "");
+    for (const [kw, color] of Object.entries(DOMAIN_ACCENT)) {
+        if (key.includes(kw)) return color;
+    }
+    return defaultColor;
+}
 
 export default function ReportViewer({ report }: ReportViewerProps) {
     const { theme } = useTheme();
@@ -30,88 +55,114 @@ export default function ReportViewer({ report }: ReportViewerProps) {
             : new Date(report.createdAt as any)).toLocaleDateString()
         : "N/A";
 
-    const coverBg = theme === "dark"
-        ? `linear-gradient(145deg, ${settings.theme.coverGradientStart || "#0a0f1e"}, ${settings.theme.coverGradientEnd || "#0d1528"})`
-        : "#FFFFFF";
-        
-    const accentColor = settings.theme.primaryAccent || "#F97316";
+    const dynamicAccent = getDomainAccent(report.domain, settings.theme.primaryAccent || "#1B6CA8");
     const headerBg = settings.theme.sectionHeaderBg || "#0d1528";
 
     return (
         <div className="relative min-h-screen pb-32">
-            {/* ─── COVER PAGE ─── */}
-            <motion.div
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="min-h-[85vh] flex flex-col justify-between p-8 sm:p-16 mb-16 rounded-3xl mx-4 sm:mx-8 xl:mx-auto max-w-5xl mt-8 transition-colors duration-300"
-                style={{
-                    background: coverBg,
-                    border: theme === "dark" ? "1px solid rgba(255,255,255,0.05)" : "1px solid var(--border-color)",
-                    boxShadow: theme === "dark" ? "0 25px 50px -12px rgba(0,0,0,0.5)" : "var(--card-shadow)"
-                }}
-            >
-                <div>
-                    {/* Badges */}
-                    <div className="flex items-center gap-3 mb-12">
-                        {report.isConfidential !== false && (
-                            <span className="text-white text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider" style={{ backgroundColor: accentColor }}>
-                                CONFIDENTIEL
-                            </span>
-                        )}
-                        {report.isInternal !== false && (
-                            <span className="border border-white/30 text-[11px] font-bold px-3 py-1.5 rounded uppercase tracking-wider"
-                                  style={{ color: theme === "dark" ? "white" : "var(--text-primary)", borderColor: theme === "dark" ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.2)"}}>
-                                Usage Interne
-                            </span>
-                        )}
-                    </div>
+            {/* ─── COVER PAGE (A4 Portrait Mockup) ─── */}
+            <div className="w-full max-w-4xl mx-auto px-4 sm:px-8 mt-8 mb-16 flex justify-center">
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="w-full max-w-[580px] h-auto sm:aspect-[1/1.414] bg-white dark:bg-gradient-to-br dark:from-[#112030] dark:to-[#0a1824] text-slate-800 dark:text-[#E8EDF2] rounded-2xl relative shadow-[0_12px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.45)] border border-slate-100 dark:border-[#1a3049]/50 overflow-hidden flex flex-col justify-between p-6 sm:p-10 md:p-12"
+                >
+                    {/* Top Accent Line */}
+                    <div className="absolute top-0 left-0 right-0 h-1.5" style={{ backgroundColor: dynamicAccent }} />
 
-                    {/* Category Label */}
-                    <p className="text-sm font-bold uppercase tracking-[0.2em] mb-4" style={{ color: accentColor }}>
-                        {report.categoryLabel || "RAPPORT TECHNIQUE D'INSTALLATION"}
-                    </p>
-
-                    {/* Title */}
-                    <h1 className="text-4xl sm:text-6xl font-extrabold mb-6"
-                        style={{ color: theme === "dark" ? "#FFFFFF" : "#0a0f1e", fontFamily: "var(--font-family-sans)" }}>
-                        {report.title}
-                    </h1>
-
-                    {/* Subtitle */}
-                    <p className="text-[#64748B] text-lg mb-16 max-w-3xl">
-                        {report.subtitle || report.course || ""}
-                    </p>
-
-                    {/* Metadata Grid */}
-                    <div className="grid grid-cols-3 border-y py-6 gap-6"
-                         style={{ borderColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
-                        <div className="border-r" style={{ borderColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
-                            <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-bold mb-1">VERSION</p>
-                            <p className="font-bold text-sm" style={{ color: theme === "dark" ? "#FFFFFF" : "#09090B" }}>{report.version || "1.0.0"}</p>
-                        </div>
-                        <div className="border-r" style={{ borderColor: theme === "dark" ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }}>
-                            <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-bold mb-1">DATE</p>
-                            <p className="font-bold text-sm" style={{ color: theme === "dark" ? "#FFFFFF" : "#09090B" }}>{report.dateOverride || reportDate}</p>
-                        </div>
-                        <div>
-                            <p className="text-[10px] text-[#64748B] uppercase tracking-widest font-bold mb-1">DOMAINE</p>
-                            <p className="font-bold text-sm" style={{ color: theme === "dark" ? "#FFFFFF" : "#09090B" }}>{report.domain || ""}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Bottom Left IP Indicators */}
-                {report.ips && report.ips.length > 0 && (
-                    <div className="flex flex-wrap items-center gap-6 mt-16 text-[#64748B] text-sm font-medium">
-                        {report.ips.map((ip, idx) => (
-                            <div key={idx} className="flex items-center gap-2">
-                                <div className="w-2 h-2 rounded-full" style={{ background: ip.color }}></div>
-                                <span>{ip.ip} ({ip.label})</span>
+                    {/* Top Section */}
+                    <div className="flex flex-col items-center w-full">
+                        {/* Centered Dual Logos */}
+                        <div className="w-full flex items-center justify-center gap-4 sm:gap-6 mt-4">
+                            <div className="bg-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-sm border border-slate-200/50 flex items-center justify-center max-w-[140px] sm:max-w-[160px]">
+                                <Image
+                                    src="/Logo_EFREI_New.png"
+                                    alt="EFREI Paris"
+                                    width={160}
+                                    height={53}
+                                    style={{ height: 40, width: "auto", display: "block", objectFit: "contain" }}
+                                    priority
+                                />
                             </div>
-                        ))}
+                            <div className="w-px h-8 sm:h-10 bg-slate-200 dark:bg-slate-700/60" />
+                            <div className="relative rounded-full overflow-hidden border-2 border-slate-200/50 shadow-sm w-10 h-10 sm:w-12 sm:h-12 flex-shrink-0">
+                                <Image
+                                    src="/Logo ABBA.jpg"
+                                    alt="Massil ABBA"
+                                    fill
+                                    style={{ objectFit: "cover" }}
+                                    priority
+                                />
+                            </div>
+                        </div>
                     </div>
-                )}
-            </motion.div>
+
+                    {/* Middle Section */}
+                    <div className="flex flex-col items-center w-full my-auto py-4 sm:py-6">
+                        {/* Title & Separator */}
+                        <div className="flex flex-col items-center w-full">
+                            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-extrabold text-center px-4 max-w-xl leading-tight" style={{ color: dynamicAccent, fontFamily: "'Inter', sans-serif" }}>
+                                {report.title}
+                            </h1>
+                            <div className="w-[80%] max-w-md h-px bg-slate-200 dark:bg-slate-700/60 mt-4 mb-4" />
+                        </div>
+
+                        {/* Metadata Details */}
+                        <div className="flex flex-col items-center gap-2 text-[11px] sm:text-xs text-slate-600 dark:text-[#9ab3c8] w-full max-w-md">
+                            <p className="text-center">
+                                <span className="font-bold text-slate-700 dark:text-white/90">Formation : </span>
+                                <span className="text-slate-500 dark:text-slate-300">{report.subtitle || report.course || "Master 1 — Cybersécurité, Réseaux & Cloud"}</span>
+                            </p>
+                            <p className="text-center">
+                                <span className="font-bold text-slate-700 dark:text-white/90">Groupe / Élève : </span>
+                                <span className="text-slate-500 dark:text-slate-300">{report.groupMembers && report.groupMembers.length > 0 ? report.groupMembers.join(", ") : "Massil ABBA"}</span>
+                            </p>
+                            <p className="text-center">
+                                <span className="font-bold text-slate-700 dark:text-white/90">Date de rendu : </span>
+                                <span className="text-slate-500 dark:text-slate-300">{report.dateOverride || reportDate}</span>
+                            </p>
+                            {report.tutor && (
+                                <p className="text-center">
+                                    <span className="font-bold text-slate-700 dark:text-white/90">Tuteur référent : </span>
+                                    <span className="text-slate-500 dark:text-slate-300">{report.tutor}</span>
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Bottom Section */}
+                    <div className="flex flex-col items-center w-full gap-4 mt-auto">
+                        {/* Campus sketch illustration - large, centered, seamless */}
+                        <div className="flex justify-center h-28 sm:h-36 md:h-40 w-full max-w-xs relative overflow-hidden">
+                            <Image
+                                src="/efrei_campus_sketch.jpg"
+                                alt="EFREI Campus Courtyard"
+                                fill
+                                style={{ objectFit: "contain" }}
+                                className="opacity-95 dark:invert dark:opacity-80 transition-all duration-300"
+                            />
+                        </div>
+
+                        {/* Bottom Accent Blocks */}
+                        <div className="flex justify-center gap-1.5 mt-1 mb-4">
+                            {["#C5A880", "#7ED3C1", "#F3A390", "#E8621A", "#795238", "#5A6B7C"].map((color, idx) => (
+                                <div
+                                    key={idx}
+                                    className="w-6 h-1 rounded-sm shadow-sm"
+                                    style={{ backgroundColor: color }}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Footer (Rendering date left, class name right) */}
+                        <div className="w-full border-t border-slate-100 dark:border-slate-800/80 pt-3 flex justify-between items-center text-[10px] sm:text-xs text-slate-400 dark:text-[#5c7d99] font-mono">
+                            <span>Date de rendu : {report.dateOverride || reportDate}</span>
+                            <span>{report.course || "M1 CSC1"}</span>
+                        </div>
+                    </div>
+                </motion.div>
+            </div>
 
             {/* ─── SECTIONS ─── */}
             <div className="max-w-4xl mx-auto px-4 sm:px-8">
@@ -137,7 +188,7 @@ export default function ReportViewer({ report }: ReportViewerProps) {
                                         <span className="text-[#94A3B8] text-2xl font-mono opacity-50">
                                             0{i + 1}
                                         </span>
-                                        <Icon size={24} style={{ color: accentColor }} />
+                                        <Icon size={24} style={{ color: dynamicAccent }} />
                                     </div>
                                 </div>
                                 <div className="w-px h-12 bg-white/10 mx-2 hidden sm:block"></div>

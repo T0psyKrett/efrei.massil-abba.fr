@@ -8,8 +8,12 @@ interface Node {
 
 const PARTICLE_COUNT = 60;
 const CONNECTION_DISTANCE = 160;
-const SPEED = 0.6;
-const NODE_SIZE = 1.8;
+const SPEED = 0.5;
+const NODE_SIZE = 1.6;
+
+// Navy/electric-blue palette
+const NODE_COLOR   = "27, 108, 168";   // #1B6CA8
+const BRIGHT_COLOR = "59, 159, 212";   // #3b9fd4
 
 export default function NetworkBackground() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -25,18 +29,18 @@ export default function NetworkBackground() {
 
         const resize = () => {
             const parent = canvas.parentElement;
-            canvas.width = parent ? parent.clientWidth : window.innerWidth;
+            canvas.width  = parent ? parent.clientWidth  : window.innerWidth;
             canvas.height = parent ? parent.clientHeight : window.innerHeight;
         };
 
         const initNodes = () => {
             nodes = Array.from({ length: PARTICLE_COUNT }, () => ({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                vx: (Math.random() - 0.5) * SPEED,
-                vy: (Math.random() - 0.5) * SPEED,
-                radius: Math.random() * (NODE_SIZE * 1.5) + 1,
-                opacity: Math.random() * 0.5 + 0.3,
+                x:       Math.random() * canvas.width,
+                y:       Math.random() * canvas.height,
+                vx:      (Math.random() - 0.5) * SPEED,
+                vy:      (Math.random() - 0.5) * SPEED,
+                radius:  Math.random() * (NODE_SIZE * 1.5) + 0.8,
+                opacity: Math.random() * 0.5 + 0.25,
             }));
         };
 
@@ -47,21 +51,21 @@ export default function NetworkBackground() {
             nodes.forEach((n) => {
                 n.x += n.vx;
                 n.y += n.vy;
-                if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+                if (n.x < 0 || n.x > canvas.width)  n.vx *= -1;
                 if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
             });
 
             // Draw connections
             for (let i = 0; i < nodes.length; i++) {
                 for (let j = i + 1; j < nodes.length; j++) {
-                    const dx = nodes[i].x - nodes[j].x;
-                    const dy = nodes[i].y - nodes[j].y;
+                    const dx   = nodes[i].x - nodes[j].x;
+                    const dy   = nodes[i].y - nodes[j].y;
                     const dist = Math.sqrt(dx * dx + dy * dy);
                     if (dist < CONNECTION_DISTANCE) {
-                        const alpha = (1 - dist / CONNECTION_DISTANCE) * 0.25;
+                        const alpha = (1 - dist / CONNECTION_DISTANCE) * 0.22;
                         ctx.beginPath();
-                        ctx.strokeStyle = `rgba(26, 127, 212, ${alpha})`;
-                        ctx.lineWidth = 0.8;
+                        ctx.strokeStyle = `rgba(${NODE_COLOR}, ${alpha})`;
+                        ctx.lineWidth   = 0.7;
                         ctx.moveTo(nodes[i].x, nodes[i].y);
                         ctx.lineTo(nodes[j].x, nodes[j].y);
                         ctx.stroke();
@@ -71,14 +75,16 @@ export default function NetworkBackground() {
 
             // Draw nodes
             nodes.forEach((n) => {
+                // Core dot
                 ctx.beginPath();
                 ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(26, 127, 212, ${n.opacity})`;
+                ctx.fillStyle = `rgba(${BRIGHT_COLOR}, ${n.opacity})`;
                 ctx.fill();
+
                 // Outer glow
                 ctx.beginPath();
-                ctx.arc(n.x, n.y, n.radius * 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = `rgba(26, 127, 212, ${n.opacity * 0.15})`;
+                ctx.arc(n.x, n.y, n.radius * 2.8, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(${NODE_COLOR}, ${n.opacity * 0.12})`;
                 ctx.fill();
             });
 

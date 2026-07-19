@@ -23,7 +23,7 @@ export default function AdminManagementPage() {
 
     useEffect(() => {
         if (!isAdmin) {
-            router.push("/dashboard");
+            router.push("/reports");
             return;
         }
 
@@ -107,7 +107,10 @@ export default function AdminManagementPage() {
                 {activeTab !== "settings" && activeTab !== "techs" && (
                     <Link
                         href={activeTab === "projects" ? "/projects/new" : "/reports/new"}
-                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#0070f3] text-white font-bold text-sm shadow-premium hover:bg-[#005bc1] transition-all"
+                        className="flex items-center gap-2 px-6 py-3 rounded-xl text-white font-bold text-sm transition-all"
+                        style={{ background: "#1B6CA8" }}
+                        onMouseEnter={(e) => (e.currentTarget as HTMLElement).style.background = "#0f4d7d"}
+                        onMouseLeave={(e) => (e.currentTarget as HTMLElement).style.background = "#1B6CA8"}
                     >
                         <Plus size={18} /> New {activeTab === "projects" ? "Project" : "Report"}
                     </Link>
@@ -136,10 +139,12 @@ export default function AdminManagementPage() {
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as "projects" | "reports" | "techs" | "settings")}
-                            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === tab.id
-                                    ? "bg-white/10 text-white border border-white/10 shadow-sm"
-                                    : "text-[#64748b] hover:text-white hover:bg-white/5"
+                            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-bold transition-all ${
+                                    activeTab === tab.id
+                                        ? "text-white border border-[rgba(27,108,168,0.4)]"
+                                        : "text-[#64748b] hover:text-white hover:bg-white/5"
                                 }`}
+                            style={activeTab === tab.id ? { background: "rgba(27,108,168,0.15)" } : {}}
                         >
                             <tab.icon size={16} />
                             {tab.label}

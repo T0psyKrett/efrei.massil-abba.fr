@@ -58,10 +58,12 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
         dateOverride: report?.dateOverride ?? "",
         domain: report?.domain ?? "EFREI",
         ips: report?.ips ?? [
-            { label: "Gateway", ip: "192.168.1.10", color: "#F97316" },
-            { label: "Bastion", ip: "10.0.0.5", color: "#F97316" }
+            { label: "Gateway", ip: "192.168.1.10", color: "#1B6CA8" },
+            { label: "Bastion", ip: "10.0.0.5", color: "#1B6CA8" }
         ],
-        published: report?.published ?? true
+        published: report?.published ?? true,
+        groupMembers: report?.groupMembers ?? [],
+        tutor: report?.tutor ?? "",
     });
 
     useEffect(() => {
@@ -221,8 +223,8 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
                 <div className="flex items-center gap-3 mb-1.5">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ background: "rgba(59,130,246,0.10)", border: "1px solid rgba(59,130,246,0.20)" }}>
-                        <FileEdit size={17} style={{ color: "#3B82F6" }} />
+                        style={{ background: "rgba(0,255,136,0.08)", border: "1px solid rgba(0,255,136,0.15)", filter: "drop-shadow(0 0 8px rgba(0,255,136,0.25))" }}>
+                        <FileEdit size={17} style={{ color: "#00ff88" }} />
                     </div>
                     <h1 className="text-[18px] font-bold" style={{ color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
                         {report?.id ? "Edit Report" : "New Report"}
@@ -324,6 +326,33 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
                     </label>
                 </div>
 
+                {/* Group Members + Tutor */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5 pt-4 border-t" style={{ borderColor: "var(--border-color)" }}>
+                    <div>
+                        <label className={labelClass} style={{ color: "var(--text-muted)" }}>Group Members</label>
+                        <input
+                            type="text"
+                            value={meta.groupMembers.join(", ")}
+                            onChange={(e) => setMeta(m => ({ ...m, groupMembers: e.target.value.split(",").map(s => s.trim()).filter(Boolean) }))}
+                            placeholder="Alice, Bob, Carol…"
+                            style={{ ...inputStyle, height: 40, padding: "0 12px" }}
+                            onFocus={onFocus} onBlur={onBlur}
+                        />
+                        <p className="text-[10px] mt-1" style={{ color: "var(--text-muted)" }}>Separate names with commas</p>
+                    </div>
+                    <div>
+                        <label className={labelClass} style={{ color: "var(--text-muted)" }}>Tutor / Supervisor</label>
+                        <input
+                            type="text"
+                            value={meta.tutor}
+                            onChange={(e) => setMeta(m => ({ ...m, tutor: e.target.value }))}
+                            placeholder="Prof. John Smith"
+                            style={{ ...inputStyle, height: 40, padding: "0 12px" }}
+                            onFocus={onFocus} onBlur={onBlur}
+                        />
+                    </div>
+                </div>
+
                 <div className="pt-4 border-t" style={{ borderColor: "var(--border-color)" }}>
                     <div className="flex items-center justify-between mb-3">
                         <label className={labelClass} style={{ color: "var(--text-muted)", marginBottom: 0 }}>IP Indicators (Bottom Left)</label>
@@ -353,10 +382,10 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
             <div className="flex flex-col gap-8 mb-10" style={{ maxWidth: 900 }}>
                 {sections.map((section, idx) => (
                     <motion.div key={section.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} 
-                         className="glass-card overflow-hidden shadow-lg border-2" style={{ borderColor: "rgba(59,130,246,0.1)" }}>
+                         className="glass-card overflow-hidden border transition-all hover:border-[rgba(0,255,136,0.3)]" style={{ borderColor: "rgba(0,255,136,0.1)" }}>
                         
                         {/* Section Header Controls */}
-                        <div className="flex items-center gap-3 p-3 px-4" style={{ background: "rgba(59,130,246,0.05)", borderBottom: "1px solid var(--border-color)" }}>
+                        <div className="flex items-center gap-3 p-3 px-4" style={{ background: "rgba(0,255,136,0.03)", borderBottom: "1px solid var(--border-color)" }}>
                             <div className="flex flex-col gap-0.5">
                                 <button type="button" onClick={() => moveSection(idx, 'up')} disabled={idx === 0} 
                                     className="text-[10px] p-0.5 disabled:opacity-20 hover:text-blue-500 transition-colors" title="Move Up">▲</button>
@@ -364,7 +393,7 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
                                     className="text-[10px] p-0.5 disabled:opacity-20 hover:text-blue-500 transition-colors" title="Move Down">▼</button>
                             </div>
                             
-                            <span className="text-[12px] font-bold tracking-widest text-[#3B82F6] opacity-80 w-6 text-center">
+                            <span className="text-[13px] font-bold tracking-widest opacity-80 w-6 text-center" style={{ color: "#00ff88", fontFamily: "'Space Grotesk', sans-serif" }}>
                                 {(idx + 1).toString().padStart(2, '0')}
                             </span>
                             
@@ -431,14 +460,17 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
                                 </div>
                             ))}
 
-                            <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-color)]">
-                                <button type="button" onClick={() => addBlock('text', idx)} className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-blue-500 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-lg transition-colors">
+                            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-[var(--border-color)]">
+                                <button type="button" onClick={() => addBlock('text', idx)} 
+                                    className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-[#00ff88] transition-all px-3 py-1.5 rounded-lg border border-transparent hover:border-[#00ff88]/30 hover:bg-[#00ff88]/5">
                                     + Add Text
                                 </button>
-                                <button type="button" onClick={() => addBlock('image', idx)} className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-blue-500 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-lg transition-colors">
+                                <button type="button" onClick={() => addBlock('image', idx)} 
+                                    className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-[#0ea5e9] transition-all px-3 py-1.5 rounded-lg border border-transparent hover:border-[#0ea5e9]/30 hover:bg-[#0ea5e9]/5">
                                     + Add Image
                                 </button>
-                                <button type="button" onClick={() => addBlock('code', idx)} className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-blue-500 bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-lg transition-colors">
+                                <button type="button" onClick={() => addBlock('code', idx)} 
+                                    className="flex items-center gap-2 text-[12px] font-bold text-gray-400 hover:text-[#f59e0b] transition-all px-3 py-1.5 rounded-lg border border-transparent hover:border-[#f59e0b]/30 hover:bg-[#f59e0b]/5">
                                     + Add Code
                                 </button>
                             </div>
@@ -448,24 +480,24 @@ export default function ReportEditor({ report, projectId, onSave }: ReportEditor
 
                 {/* Add New Section Floating Button */}
                 <button type="button" onClick={addSection}
-                    className="flex justify-center items-center gap-2 p-4 rounded-xl border border-dashed transition-all hover:border-solid group"
-                    style={{ borderColor: "var(--border-color-strong)", background: "rgba(255,255,255,0.01)" }}>
-                    <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors">
-                         <span className="text-blue-500 text-lg font-bold pb-0.5">+</span>
+                    className="flex justify-center items-center gap-3 p-4 rounded-xl border border-dashed transition-all hover:border-solid hover:border-[#00ff88]/50 group"
+                    style={{ borderColor: "var(--border-dashed)", background: "rgba(255,255,255,0.01)" }}>
+                    <div className="w-8 h-8 rounded-full bg-[#00ff88]/10 flex items-center justify-center group-hover:bg-[#00ff88]/20 group-hover:shadow-[0_0_12px_rgba(0,255,136,0.3)] transition-all">
+                         <span className="text-[#00ff88] text-lg font-bold pb-0.5">+</span>
                     </div>
-                    <span className="text-[13px] font-bold text-gray-400 group-hover:text-blue-500 transition-colors">Add Content Section</span>
+                    <span className="text-[13px] font-bold text-gray-400 group-hover:text-[#00ff88] transition-colors">Add Content Section</span>
                 </button>
             </div>
 
             {/* Navigation + save / Sticky Bottom Ribbon */}
             <div className="sticky bottom-0 z-50 py-4 mt-12 flex justify-end" style={{ maxWidth: 900, borderTop: "1px solid var(--border-color)", background: "var(--bg-primary)" }}>
                 <button onClick={handleSave} disabled={saving || !meta.title}
-                    className="flex items-center justify-center gap-2 rounded-xl text-[14px] font-semibold transition-all shadow-xl disabled:opacity-40 w-full sm:w-auto"
+                    className="btn-primary flex items-center justify-center gap-2 shadow-xl disabled:opacity-40 w-full sm:w-auto"
                     style={{
                         padding: "0 40px",
                         minHeight: 52,
-                        background: saved ? "linear-gradient(135deg, #16a34a, #15803d)" : "linear-gradient(135deg, #3B82F6, #2563EB)",
-                        color: "#fff",
+                        background: saved ? "linear-gradient(135deg, #0ea5e9, #0284c7)" : undefined,
+                        color: saved ? "#fff" : undefined,
                     }}
                 >
                     {saving ? <Loader2 size={16} className="animate-spin" /> : saved ? <CheckCircle2 size={16} /> : <Save size={16} />}
