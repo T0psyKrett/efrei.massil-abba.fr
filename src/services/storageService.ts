@@ -1,6 +1,3 @@
-import { storage } from "./firebase";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
-
 export interface UploadProgressCallback {
     (progress: number): void;
 }
@@ -17,42 +14,12 @@ export function detectFileType(filename: string): ImportedFileType | null {
 
 export async function uploadFile(
     file: File,
-    path: string,
+    _path: string,
     onProgress?: UploadProgressCallback
 ): Promise<string> {
-    // 1. Attempt client-side Firebase Storage upload first
-    if (storage) {
-        try {
-            const storageRef = ref(storage, path);
-            const task = uploadBytesResumable(storageRef, file);
+    // Upload via server-side Cloudinary route
+    onProgress?.(10);
 
-            return await new Promise<string>((resolve, reject) => {
-                task.on(
-                    "state_changed",
-                    (snapshot) => {
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        onProgress?.(progress);
-                    },
-                    (error) => reject(error),
-                    async () => {
-                        try {
-                            const url = await getDownloadURL(task.snapshot.ref);
-                            resolve(url);
-                        } catch (urlErr) {
-                            reject(urlErr);
-                        }
-                    }
-                );
-            });
-        } catch (firebaseErr: any) {
-            console.warn("Client-side Firebase Storage upload failed:", firebaseErr);
-            if (firebaseErr?.code && firebaseErr.code !== "storage/unauthorized") {
-                throw new Error(`Erreur Firebase Storage client (${firebaseErr.code}) : ${firebaseErr.message}`);
-            }
-        }
-    }
-
-    // 2. Failover to /api/upload endpoint
     const formData = new FormData();
     formData.append("file", file);
 
@@ -60,6 +27,8 @@ export async function uploadFile(
         method: "POST",
         body: formData,
     });
+
+    onProgress?.(90);
 
     if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
@@ -71,15 +40,10 @@ export async function uploadFile(
     return data.url;
 }
 
-export async function deleteFile(url: string): Promise<void> {
-    try {
-        if (storage && url.includes("firebasestorage")) {
-            const fileRef = ref(storage, url);
-            await deleteObject(fileRef);
-        }
-    } catch (err) {
-        console.warn("Failed to delete object from storage:", err);
-    }
+export async function deleteFile(_url: string): Promise<void> {
+    // Deletion via Cloudinary would need a separate API call
+    // For now, we skip deletion to avoid complexity
+    console.warn("deleteFile: Cloudinary deletion not implemented yet");
 }
 
 export function generateStoragePath(
