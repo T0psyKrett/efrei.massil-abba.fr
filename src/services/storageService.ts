@@ -20,9 +20,9 @@ export async function uploadFile(
     path: string,
     onProgress?: UploadProgressCallback
 ): Promise<string> {
-    // Attempt client-side Firebase Storage upload first
-    try {
-        if (storage) {
+    // 1. Attempt client-side Firebase Storage upload first
+    if (storage) {
+        try {
             const storageRef = ref(storage, path);
             const task = uploadBytesResumable(storageRef, file);
 
@@ -35,17 +35,24 @@ export async function uploadFile(
                     },
                     (error) => reject(error),
                     async () => {
-                        const url = await getDownloadURL(task.snapshot.ref);
-                        resolve(url);
+                        try {
+                            const url = await getDownloadURL(task.snapshot.ref);
+                            resolve(url);
+                        } catch (urlErr) {
+                            reject(urlErr);
+                        }
                     }
                 );
             });
+        } catch (firebaseErr: any) {
+            console.warn("Client-side Firebase Storage upload failed:", firebaseErr);
+            if (firebaseErr?.code && firebaseErr.code !== "storage/unauthorized") {
+                throw new Error(`Erreur Firebase Storage client (${firebaseErr.code}) : ${firebaseErr.message}`);
+            }
         }
-    } catch (firebaseErr) {
-        console.warn("Client-side Firebase Storage upload failed or unauthorized. Falling back to /api/upload:", firebaseErr);
     }
 
-    // Failover to /api/upload endpoint (saves to /public/uploads/)
+    // 2. Failover to /api/upload endpoint
     const formData = new FormData();
     formData.append("file", file);
 

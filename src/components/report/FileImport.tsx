@@ -106,20 +106,16 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
                 }
             ] : [];
 
-                if (!isTextDoc && url.length > 1000000) {
-                    throw new Error("Le fichier PDF est supérieur à 1 Mo et nécessite la clé FIREBASE_ADMIN_PRIVATE_KEY sur Vercel pour le stockage Cloud Firebase Storage.");
-                }
-
-                const reportId = await createReport({
-                    projectId,
-                    title: file.name.replace(/\.(pdf|docx|md)$/i, ""),
-                    course: selectedCourse,
-                    sections: initialSections,
-                    type: reportType,
-                    importedFileUrl: isTextDoc ? undefined : url,
-                    importedFileType: isTextDoc ? undefined : (fileType ?? undefined),
-                    published: true // Publish immediately for visitors
-                });
+            const reportId = await createReport({
+                projectId,
+                title: file.name.replace(/\.(pdf|docx|md)$/i, ""),
+                course: selectedCourse,
+                sections: initialSections,
+                type: reportType,
+                importedFileUrl: isTextDoc ? undefined : url,
+                importedFileType: isTextDoc ? undefined : (fileType ?? undefined),
+                published: true // Publish immediately for visitors
+            });
 
             setFiles((prev) =>
                 prev.map((f) =>
