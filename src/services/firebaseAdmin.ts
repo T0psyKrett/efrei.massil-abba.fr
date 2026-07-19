@@ -7,11 +7,16 @@ let adminApp: App;
 
 function getAdminApp(): App {
     if (getApps().length === 0) {
+        let privateKey = process.env.FIREBASE_ADMIN_PRIVATE_KEY || "";
+        if (privateKey) {
+            privateKey = privateKey.trim().replace(/^"|"$/g, "").replace(/\\n/g, "\n");
+        }
+
         adminApp = initializeApp({
             credential: cert({
-                projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
+                projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "site-efreimassilabba",
                 clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-                privateKey: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+                privateKey: privateKey,
             }),
             storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "site-efreimassilabba.firebasestorage.app",
         });
