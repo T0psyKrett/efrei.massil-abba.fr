@@ -29,11 +29,36 @@ export default function PDFPreviewModal({
 }: PDFPreviewModalProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
 
-    // Trap scroll on body when modal is open
+    // Request native browser fullscreen when opening modal
     useEffect(() => {
-        document.body.style.overflow = open ? "hidden" : "";
-        return () => { document.body.style.overflow = ""; };
+        if (open) {
+            document.body.style.overflow = "hidden";
+            const elem = overlayRef.current;
+            if (elem) {
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(() => {});
+                } else if ((elem as any).webkitRequestFullscreen) {
+                    (elem as any).webkitRequestFullscreen();
+                }
+            }
+        } else {
+            document.body.style.overflow = "";
+            if (document.fullscreenElement) {
+                document.exitFullscreen().catch(() => {});
+            }
+        }
+
+        return () => {
+            document.body.style.overflow = "";
+        };
     }, [open]);
+
+    const handleClose = () => {
+        if (document.fullscreenElement) {
+            document.exitFullscreen().catch(() => {});
+        }
+        onClose();
+    };
 
     return (
         <AnimatePresence>
@@ -44,24 +69,23 @@ export default function PDFPreviewModal({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.18 }}
-                    onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
+                    transition={{ duration: 0.15 }}
                     role="dialog"
                     aria-modal="true"
-                    aria-label={`Visionneuse PDF : ${title}`}
+                    aria-label={`Visionneuse PDF Plein Écran : ${title}`}
                 >
                     <motion.div
                         className="pdf-modal-panel overflow-hidden"
-                        initial={{ opacity: 0, y: 20, scale: 0.97 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 12, scale: 0.97 }}
-                        transition={{ duration: 0.22 }}
+                        initial={{ opacity: 0, scale: 0.98 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.98 }}
+                        transition={{ duration: 0.15 }}
                     >
                         {pdfUrl ? (
                             <PDFViewer
                                 url={pdfUrl}
                                 title={title}
-                                onClose={onClose}
+                                onClose={handleClose}
                                 className="h-full w-full"
                             />
                         ) : (
@@ -73,8 +97,8 @@ export default function PDFPreviewModal({
                                         <span>{title}</span>
                                     </div>
                                     <button
-                                        onClick={onClose}
-                                        className="p-1.5 bg-[#112030] border border-red-500/30 rounded-lg text-red-400 hover:text-red-300 transition"
+                                        onClick={handleClose}
+                                        className="p-1.5 bg-[#112030] border border-red-500/30 rounded-lg text-red-400 hover:text-red-300 transition cursor-pointer"
                                         aria-label="Fermer"
                                     >
                                         <X size={15} />
@@ -103,4 +127,3 @@ export default function PDFPreviewModal({
         </AnimatePresence>
     );
 }
-

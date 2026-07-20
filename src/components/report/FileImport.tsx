@@ -1,11 +1,10 @@
 "use client";
 
-import { useCallback, useState, useEffect } from "react";
+import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, ChevronRight, Settings } from "lucide-react";
+import { Upload, FileText, CheckCircle2, AlertCircle, Loader2, X, ChevronRight } from "lucide-react";
 import { uploadFile, generateStoragePath, detectFileType } from "@/services/storageService";
-import { getSettings, SiteSettings } from "@/services/firestoreService";
 import { useRouter } from "next/navigation";
 import PDFPreviewModal from "@/components/ui/PDFPreviewModal";
 
@@ -30,12 +29,6 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
     const router = useRouter();
     const [files, setFiles] = useState<ImportedFile[]>([]);
     const [viewingFile, setViewingFile] = useState<ImportedFile | null>(null);
-    const [settings, setSettings] = useState<SiteSettings | null>(null);
-    const [selectedCourse, setSelectedCourse] = useState<string>("");
-
-    useEffect(() => {
-        getSettings().then(setSettings).catch(console.error);
-    }, []);
 
     const processFile = async (file: File) => {
         const allowedTypes = [".pdf", ".docx", ".md", ".png", ".jpg", ".jpeg"];
@@ -112,7 +105,7 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
                 body: JSON.stringify({
                     projectId,
                     title: file.name.replace(/\.(pdf|docx|md)$/i, ""),
-                    course: selectedCourse,
+                    course: "",
                     sections: initialSections,
                     type: reportType,
                     importedFileUrl: isTextDoc ? undefined : url,
@@ -133,7 +126,9 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
                         : f
                 )
             );
-            onImported?.();
+            setTimeout(() => {
+                onImported?.();
+            }, 800);
         } catch (err: any) {
             console.error("Upload error details:", err);
             const msg = err?.message || "Échec de l'envoi du fichier. Réessayez.";
@@ -145,7 +140,7 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
 
     const onDrop = useCallback(
         (accepted: File[]) => accepted.forEach(processFile),
-        [projectId, selectedCourse]
+        [projectId]
     );
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -156,20 +151,6 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
 
     return (
         <div className="space-y-4">
-            {/* Context bar */}
-            <div className="flex items-center gap-3 mb-2">
-                <Settings size={16} style={{ color: "var(--text-muted)" }} />
-                <select
-                    value={selectedCourse}
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    className="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg text-[13px] text-[var(--text-primary)] outline-none px-3 py-2 transition-colors focus:border-[#00ff88]"
-                    style={{ minWidth: 200 }}
-                >
-                    <option value="">Assign Course (Optional)</option>
-                    {settings?.courses.map(c => <option key={c.id} value={c.name}>{c.name}</option>)}
-                </select>
-            </div>
-
             {/* Dropzone */}
             <div
                 {...getRootProps()}
@@ -187,10 +168,10 @@ export default function FileImport({ projectId, onImported }: FileImportProps) {
                 </div>
                 <div>
                     <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>
-                        {isDragActive ? "Drop files here" : "Drag & drop files to import"}
+                        {isDragActive ? "Glissez vos fichiers ici" : "Glissez-déposez un fichier à importer"}
                     </p>
                     <p className="text-[11px] mt-1.5" style={{ color: "var(--text-muted)" }}>
-                        DOCX and MD files are automatically converted to editable sections!
+                        Supports PDF, DOCX et MD (les fichiers DOCX et MD sont convertis automatiquement)
                     </p>
                 </div>
                 <button

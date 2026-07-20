@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
+import path from "path";
+import fs from "fs/promises";
+import { getAdminStorage } from "@/services/firebaseAdmin";
 
 export const maxDuration = 60;
-
-// Configure Cloudinary with env vars
-cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 export async function POST(request: NextRequest) {
     try {
@@ -26,35 +21,54 @@ export async function POST(request: NextRequest) {
         const bytes = await file.arrayBuffer();
         const buffer = Buffer.from(bytes);
 
-        // Upload to Cloudinary as raw file (supports PDF, DOCX, etc.)
-        const result = await new Promise<any>((resolve, reject) => {
-            const uploadStream = cloudinary.uploader.upload_stream(
-                {
-                    resource_type: "raw",       // required for PDF/non-image files
-                    folder: "efrei-reports",
-                    use_filename: true,
-                    unique_filename: true,
-                    overwrite: false,
-                    access_mode: "public",
+        // Try Firebase Admin Storage first for production/Vercel serverless deployment
+        try {
+            const bucket = getAdminStorage().bucket();
+            const cleanFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+            const filePath = `reports/${Date.now()}_${cleanFilename}`;
+            const fileRef = bucket.file(filePath);
+
+            await fileRef.save(buffer, {
+                metadata: {
+                    contentType: file.type || "application/pdf",
                 },
-                (error, result) => {
-                    if (error) reject(error);
-                    else resolve(result);
-                }
-            );
-            uploadStream.end(buffer);
-        });
+                resumable: false,
+            });
+
+            const [signedUrl] = await fileRef.getSignedUrl({
+                action: "read",
+                expires: "01-01-2099",
+            });
+
+            return NextResponse.json({
+                url: signedUrl,
+                filename: file.name,
+            }, { status: 200 });
+        } catch (storageErr) {
+            console.warn("Firebase Admin Storage upload skipped/failed, fallback to local uploads:", storageErr);
+        }
+
+        // Local public storage fallback (e.g. for dev / Node server)
+        const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        await fs.mkdir(uploadsDir, { recursive: true });
+
+        const cleanFilename = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        const filename = `${Date.now()}_${cleanFilename}`;
+        const filePath = path.join(uploadsDir, filename);
+
+        await fs.writeFile(filePath, buffer);
+
+        const fileUrl = `/uploads/${filename}`;
 
         return NextResponse.json({
-            url: result.secure_url,
+            url: fileUrl,
             filename: file.name,
-            public_id: result.public_id,
         }, { status: 200 });
 
     } catch (error: any) {
-        console.error("Cloudinary upload error:", error);
+        console.error("Upload route error:", error);
         return NextResponse.json(
-            { error: error?.message || "Échec de l'envoi du fichier vers Cloudinary" },
+            { error: error?.message || "Échec de l'envoi du fichier" },
             { status: 500 }
         );
     }

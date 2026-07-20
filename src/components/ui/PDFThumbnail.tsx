@@ -29,7 +29,11 @@ export default function PDFThumbnail({ url, title, className = "" }: PDFThumbnai
                     pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
                 }
 
-                const response = await fetch(url);
+                let response = await fetch(url);
+                if (!response.ok) {
+                    const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+                    response = await fetch(proxyUrl);
+                }
                 if (!response.ok) throw new Error("HTTP error " + response.status);
                 const arrayBuffer = await response.arrayBuffer();
 
@@ -68,7 +72,7 @@ export default function PDFThumbnail({ url, title, className = "" }: PDFThumbnai
                 if (isMounted) setLoading(false);
             } catch (err) {
                 if (isMounted) {
-                    console.error("PDF Thumbnail render error:", err);
+                    console.warn("PDF Thumbnail render notice:", err);
                     setError(true);
                     setLoading(false);
                 }

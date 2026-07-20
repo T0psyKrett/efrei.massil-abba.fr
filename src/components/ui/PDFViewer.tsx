@@ -90,7 +90,11 @@ export default function PDFViewer({
             }
 
             // Fetch arrayBuffer for maximum cross-origin / Firebase token reliability
-            const response = await fetch(url);
+            let response = await fetch(url);
+            if (!response.ok) {
+                const proxyUrl = `/api/pdf-proxy?url=${encodeURIComponent(url)}`;
+                response = await fetch(proxyUrl);
+            }
             if (!response.ok) {
                 throw new Error(`Impossible de télécharger le fichier PDF (${response.status} ${response.statusText})`);
             }
@@ -114,7 +118,7 @@ export default function PDFViewer({
             setLoadingProgress(100);
             setLoading(false);
         } catch (err: any) {
-            console.error("Failed to load PDF:", err);
+            console.warn("PDF load notice:", err);
             setError(err?.message || "Le document PDF n'a pas pu être chargé. Il est peut-être corrompu ou protégé.");
             setLoading(false);
         }
@@ -146,7 +150,7 @@ export default function PDFViewer({
                 const containerWidth = containerRef.current.clientWidth - 48; // padding space
                 const viewportUnscaled = page.getViewport({ scale: 1.0, rotation });
                 if (containerWidth > 0 && viewportUnscaled.width > 0) {
-                    targetScale = Math.min(Math.max(containerWidth / viewportUnscaled.width, 0.5), 2.5);
+                    targetScale = Math.min(Math.max(containerWidth / viewportUnscaled.width, 0.1), 3.5);
                 }
             }
 

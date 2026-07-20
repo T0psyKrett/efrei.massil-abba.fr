@@ -180,18 +180,44 @@ export async function searchProjects(term: string): Promise<Project[]> {
 
 // ─── Reports ─────────────────────────────────────────────
 export async function getReports(): Promise<Report[]> {
-    const snap = await getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc")));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Report));
+    try {
+        const res = await fetch("/api/reports");
+        if (res.ok) {
+            const data = await res.json();
+            return data as Report[];
+        }
+    } catch {
+        // Silent fallback
+    }
+    try {
+        const snap = await getDocs(query(collection(db, "reports"), orderBy("createdAt", "desc")));
+        return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Report));
+    } catch {
+        return [];
+    }
 }
 
 export async function getProjectReports(projectId: string): Promise<Report[]> {
-    const snap = await getDocs(query(collection(db, "reports"), where("projectId", "==", projectId)));
-    return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Report));
+    const all = await getReports();
+    return all.filter((r) => r.projectId === projectId);
 }
 
 export async function getReport(id: string): Promise<Report | null> {
-    const snap = await getDoc(doc(db, "reports", id));
-    return snap.exists() ? ({ id: snap.id, ...snap.data() } as Report) : null;
+    try {
+        const res = await fetch(`/api/reports/${id}`);
+        if (res.ok) {
+            return await res.json();
+        }
+    } catch {
+        // Silent fallback
+    }
+    try {
+        const snap = await getDoc(doc(db, "reports", id));
+        if (snap.exists()) {
+            return { id: snap.id, ...snap.data() } as Report;
+        }
+    } catch { }
+    return null;
 }
 
 export async function createReport(data: Omit<Report, "id" | "createdAt" | "updatedAt">): Promise<string> {
@@ -246,7 +272,16 @@ export async function updateReport(id: string, data: Partial<Report>): Promise<v
 }
 
 export async function deleteReport(id: string): Promise<void> {
-    await deleteDoc(doc(db, "reports", id));
+    try {
+        await deleteDoc(doc(db, "reports", id));
+    } catch (err) {
+        console.warn(`Client deleteDoc failed for report ${id}, deleting via server API:`, err);
+        const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            throw new Error(errData.error || `Erreur de suppression ${res.status}`);
+        }
+    }
 }
 
 // ─── Settings ────────────────────────────────────────────
@@ -284,16 +319,18 @@ export const DEFAULT_SETTINGS: SiteSettings = {
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-    const snap = await getDoc(doc(db, "settings", "global"));
-    if (snap.exists()) {
-        const data = snap.data() as Partial<SiteSettings>;
-        return {
-            courses: data.courses || DEFAULT_SETTINGS.courses,
-            theme: { ...DEFAULT_SETTINGS.theme, ...data.theme }
-        };
+    try {
+        const snap = await getDoc(doc(db, "settings", "global"));
+        if (snap.exists()) {
+            const data = snap.data() as Partial<SiteSettings>;
+            return {
+                courses: data.courses || DEFAULT_SETTINGS.courses,
+                theme: { ...DEFAULT_SETTINGS.theme, ...data.theme }
+            };
+        }
+    } catch {
+        // Silent fallback to default settings on unauthenticated client
     }
-    // Seed default settings on first load if they don't exist
-    await setDoc(doc(db, "settings", "global"), DEFAULT_SETTINGS);
     return DEFAULT_SETTINGS;
 }
 

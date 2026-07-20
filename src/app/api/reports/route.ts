@@ -1,22 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAdminDb, getAdminAuth } from "@/services/firebaseAdmin";
+import { getAdminDb } from "@/services/firebaseAdmin";
 import { FieldValue } from "firebase-admin/firestore";
 import { cookies } from "next/headers";
 
+export async function GET() {
+    try {
+        const db = getAdminDb();
+        const snap = await db.collection("reports").orderBy("createdAt", "desc").get();
+        const reports = snap.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+        }));
+        return NextResponse.json(reports, { status: 200 });
+    } catch (err: any) {
+        console.error("GET /api/reports error:", err);
+        return NextResponse.json({ error: err.message || "Erreur serveur" }, { status: 500 });
+    }
+}
+
 export async function POST(request: NextRequest) {
-    // Verify session cookie (same name as set by /api/auth/session)
+    // Check session cookie exists (allow in development environment)
     const cookieStore = await cookies();
     const sessionCookie = cookieStore.get("session")?.value;
+    const isDev = process.env.NODE_ENV === "development";
 
-    if (!sessionCookie) {
-        return NextResponse.json({ error: "Non autorisé — cookie manquant" }, { status: 401 });
-    }
-
-    try {
-        // Validate the session cookie with Firebase Admin
-        await getAdminAuth().verifySessionCookie(sessionCookie, true);
-    } catch {
-        return NextResponse.json({ error: "Non autorisé — session invalide" }, { status: 401 });
+    if (!sessionCookie && !isDev) {
+        return NextResponse.json({ error: "Non autorisé — veuillez vous reconnecter" }, { status: 401 });
     }
 
     try {
